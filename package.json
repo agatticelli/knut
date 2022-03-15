@@ -1,8 +1,8 @@
 {
-  "name": "expenses-api",
+  "name": "knut",
   "version": "0.1.0",
   "bin": {
-    "expenses-api": "bin/expenses-api.js"
+    "knut": "bin/knut.js"
   },
   "scripts": {
     "build": "tsc",
