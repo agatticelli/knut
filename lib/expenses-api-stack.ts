@@ -10,11 +10,13 @@ import { EventBus } from 'aws-cdk-lib/aws-events';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export class ExpensesApiStack extends Stack {
+  #expensesEventBus: EventBus;
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     // knut event bus
-    const eventBus = new EventBus(this, 'KnutEventBus', {
+    this.#expensesEventBus = new EventBus(this, 'KnutEventBus', {
       eventBusName: 'knut-event-bus',
     });
 
@@ -31,7 +33,7 @@ export class ExpensesApiStack extends Stack {
       handler: 'handler',
       entry: path.join(__dirname, '..', 'src', 'lambda', 'expenses-stream-process.ts'),
       environment: {
-        EVENT_BUS_NAME: eventBus.eventBusName,
+        EVENT_BUS_NAME: this.#expensesEventBus.eventBusName,
       },
     });
 
@@ -63,6 +65,10 @@ export class ExpensesApiStack extends Stack {
     expensesTable.grantWriteData(createExpensesHandler);
 
     // grants putEvent access to stream handler
-    eventBus.grantPutEventsTo(expensesTableStreamHandler);
+    this.#expensesEventBus.grantPutEventsTo(expensesTableStreamHandler);
+  }
+
+  getExpensesEventBus() {
+    return this.#expensesEventBus;
   }
 }
