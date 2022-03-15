@@ -50,11 +50,9 @@ export class ExpensesApiStack extends Stack {
       handler: 'handler',
       entry: path.join(__dirname, '..', 'src', 'lambda', 'expenses-store.ts'),
       environment: {
-        TABLE_NAME: expensesTable.tableName,
+        EXPENSES_TABLE_NAME: expensesTable.tableName,
       },
     });
-
-    // create a lambda handler to retrieve expenses from dynamodb
 
     // create api gateway to expose the lambda handler
     const api = new apigw.RestApi(this, 'ExpensesApi');
