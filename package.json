@@ -25,6 +25,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.54.0",
     "@aws-sdk/client-eventbridge": "^3.54.0",
+    "@aws-sdk/util-dynamodb": "^3.54.1",
     "aws-cdk-lib": "2.10.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.16",
