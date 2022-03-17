@@ -7,6 +7,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
+import * as apigw from 'aws-cdk-lib/aws-apigateway';
 
 interface PaymentsApiStackProps extends StackProps {
   expensesEventBus: EventBus;
@@ -47,5 +48,23 @@ export class PaymentsApiStack extends Stack {
         new LambdaFunction(createPaymentsHandler),
       ],
     });
+
+    // create lambda handler to get payments from dynamodb by date range
+    const getPaymentsHandler = new lambda.NodejsFunction(this, 'PaymentsGetHandler', {
+      runtime: Runtime.NODEJS_14_X,
+      handler: 'handler',
+      entry: path.join(__dirname, '..', 'src', 'lambda', 'payments-get.ts'),
+      environment: {
+        PAYMENTS_TABLE_NAME: paymentsTable.tableName,
+      },
+    });
+
+    // grant lambda read access to payments table
+    paymentsTable.grantReadData(getPaymentsHandler);
+
+    // add api gateway to expose payments get handler
+    const api = new apigw.RestApi(this, 'ExpensesApi');
+    const expensesApi = api.root.addResource('payments');
+    expensesApi.addMethod('GET', new apigw.LambdaIntegration(getPaymentsHandler));
   }
 }
