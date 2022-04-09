@@ -6,6 +6,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime, StartingPosition } from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager'
+import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
 import { EventBus } from 'aws-cdk-lib/aws-events';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
@@ -64,6 +66,15 @@ export class ExpensesApiStack extends Stack {
 
     // grants putEvent access to stream handler
     this.#expensesEventBus.grantPutEventsTo(expensesTableStreamHandler);
+
+    // create knut hosted zone
+    const myHostedZone = new PublicHostedZone(this, 'KnutHostedZone', {
+      zoneName: 'knut.ar',
+    });
+    new Certificate(this, 'Certificate', {
+      domainName: 'knut.ar',
+      validation: CertificateValidation.fromDns(myHostedZone),
+    });
   }
 
   getExpensesEventBus() {
