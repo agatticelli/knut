@@ -13,7 +13,6 @@ import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-al
 interface PaymentsApiStackProps extends StackProps {
   expensesEventBus: EventBus;
 }
-  
 
 export class PaymentsApiStack extends Stack {
   constructor(scope: Construct, id: string, props: PaymentsApiStackProps) {
