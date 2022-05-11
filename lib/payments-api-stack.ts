@@ -7,7 +7,8 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { EventBus, Rule } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import { HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2-alpha'
+import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
 
 interface PaymentsApiStackProps extends StackProps {
   expensesEventBus: EventBus;
@@ -63,8 +64,11 @@ export class PaymentsApiStack extends Stack {
     paymentsTable.grantReadData(getPaymentsHandler);
 
     // add api gateway to expose payments get handler
-    const api = new apigw.RestApi(this, 'ExpensesApi');
-    const expensesApi = api.root.addResource('payments');
-    expensesApi.addMethod('GET', new apigw.LambdaIntegration(getPaymentsHandler));
+    const api = new HttpApi(this, 'PaymentsApi');
+    api.addRoutes({
+      path: '/payments',
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetPaymentsEndpoint', getPaymentsHandler),
+    });
   }
 }

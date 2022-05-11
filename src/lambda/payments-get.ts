@@ -1,7 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
-// Create service client module using ES6 syntax.
-import { DynamoDBClient, QueryCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 import { badRequest, ok } from "../utils/responses";
 
@@ -11,7 +10,7 @@ const dateValidator = (date: string) => /^\d{4}\/\d{2}\/\d{2}$/.test(date);
 
 // create a lambda handler to process dynamodb stream
 const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  const { from, to } = event.queryStringParameters!;
+  const { from, to } = event.queryStringParameters || {};
   if (!from || !to || !dateValidator(from) || !dateValidator(to)) {
     return badRequest('Invalid date format. Use: YYYY/MM/DD');
   }

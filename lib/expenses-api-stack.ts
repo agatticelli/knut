@@ -5,17 +5,35 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime, StartingPosition } from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Certificate, CertificateValidation } from 'aws-cdk-lib/aws-certificatemanager'
 import { PublicHostedZone } from 'aws-cdk-lib/aws-route53'
 import { EventBus } from 'aws-cdk-lib/aws-events';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { HttpApi, HttpMethod, DomainName } from '@aws-cdk/aws-apigatewayv2-alpha';
+import { HttpLambdaIntegration } from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
 
 export class ExpensesApiStack extends Stack {
   #expensesEventBus: EventBus;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+
+    const domain = 'knut.ar';
+
+    // create knut hosted zone
+    const myHostedZone = new PublicHostedZone(this, 'KnutHostedZone', {
+      zoneName: domain,
+    });
+    const certificate = new Certificate(this, 'Certificate', {
+      domainName: domain,
+      validation: CertificateValidation.fromDns(myHostedZone),
+    });
+
+    // create domain name
+    const domainName = new DomainName(this, 'DomainName', {
+      domainName: domain,
+      certificate: Certificate.fromCertificateArn(this, 'cert', certificate.certificateArn),
+    });
 
     // knut event bus
     this.#expensesEventBus = new EventBus(this, 'KnutEventBus', {
@@ -56,25 +74,24 @@ export class ExpensesApiStack extends Stack {
       },
     });
 
-    // create api gateway to expose the lambda handler
-    const api = new apigw.RestApi(this, 'ExpensesApi');
-    const expensesApi = api.root.addResource('expenses');
-    expensesApi.addMethod('POST', new apigw.LambdaIntegration(createExpensesHandler));
-
     // grants write access to the table
     expensesTable.grantWriteData(createExpensesHandler);
 
+    // create api gateway to expose the lambda handler
+    const api = new HttpApi(this, 'ExpensesApi', {
+      defaultDomainMapping: {
+        domainName: domainName,
+        mappingKey: 'expenses',
+      },
+    });
+    api.addRoutes({
+      path: '/expenses',
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('createExpensesHandler', createExpensesHandler),
+    });
+
     // grants putEvent access to stream handler
     this.#expensesEventBus.grantPutEventsTo(expensesTableStreamHandler);
-
-    // create knut hosted zone
-    const myHostedZone = new PublicHostedZone(this, 'KnutHostedZone', {
-      zoneName: 'knut.ar',
-    });
-    new Certificate(this, 'Certificate', {
-      domainName: 'knut.ar',
-      validation: CertificateValidation.fromDns(myHostedZone),
-    });
   }
 
   getExpensesEventBus() {
